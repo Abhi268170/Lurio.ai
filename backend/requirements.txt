@@ -19,3 +19,5 @@ alembic
 pydantic[email]
 python-dotenv
 cryptography
+weasyprint
+mistune

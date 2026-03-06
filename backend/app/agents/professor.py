@@ -32,6 +32,8 @@ class ProfessorAgent:
         3. Use sections with ## headings.
         4. Use bullet points for key takeaways.
         5. Include a "Summary" section at the end.
+        6. Use LaTeX for any mathematical expressions: inline with $...$ and block with $$...$$.
+        7. When a concept benefits from a diagram (flows, processes, architectures, sequences), include a Mermaid diagram using a ```mermaid code block. Keep diagrams concise (5-8 nodes max).
         {user_profile_injection}
         """
 
@@ -64,6 +66,8 @@ class ProfessorAgent:
         3. Use sections with ## headings.
         4. Use bullet points for key takeaways.
         5. Include a "Summary" section at the end.
+        6. Use LaTeX for any mathematical expressions: inline with $...$ and block with $$...$$.
+        7. When a concept benefits from a diagram (flows, processes, architectures, sequences), include a Mermaid diagram using a ```mermaid code block. Keep diagrams concise (5-8 nodes max).
         {user_profile_injection}
         """
 

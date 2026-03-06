@@ -368,13 +368,16 @@ Write 2-3 clear, concise sentences. Return only the definition text, no extra fo
 
 
 @router.get("/{id}/download")
-async def download_course(
+async def download_course_pdf(
     *,
     db: AsyncSession = Depends(get_db),
     id: int,
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
-    """Download course content as a text file."""
+    """Download course content as a formatted PDF."""
+    import asyncio
+    from app.services.pdf_service import generate_course_pdf
+
     result = await db.execute(
         select(Course)
         .options(selectinload(Course.modules))
@@ -384,13 +387,13 @@ async def download_course(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    content = f"COURSE: {course.title}\nTOPIC: {course.topic}\n\n"
-    for module in sorted(course.modules, key=lambda x: x.order):
-        content += f"--- {module.title} ---\n\n"
-        content += f"{module.content}\n\n"
+    modules = sorted(course.modules, key=lambda x: x.order or 0)
+    loop = asyncio.get_event_loop()
+    pdf_bytes = await loop.run_in_executor(None, generate_course_pdf, course, modules)
 
+    filename = course.topic.replace(" ", "_") + ".pdf"
     return Response(
-        content=content,
-        media_type="text/plain",
-        headers={"Content-Disposition": f"attachment; filename={course.topic.replace(' ', '_')}.txt"}
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

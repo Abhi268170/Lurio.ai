@@ -2,6 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import mermaid from 'mermaid';
+
+mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+
+const MermaidBlock: React.FC<{ code: string }> = ({ code }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const id = `mermaid-${Math.random().toString(36).slice(2)}`;
+        mermaid.render(id, code)
+            .then(({ svg }) => { if (ref.current) ref.current.innerHTML = svg; })
+            .catch(() => { if (ref.current) ref.current.innerHTML = `<pre>${code}</pre>`; });
+    }, [code]);
+    return <div ref={ref} className="my-4 flex justify-center overflow-x-auto" />;
+};
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { useCourseStore } from '../stores/courseStore';
 import clsx from 'clsx';
@@ -290,7 +306,20 @@ export const ContentArea: React.FC = () => {
                         <QuizView content={content} moduleId={activeModule.id} userData={activeModule.user_data} />
                     ) : (
                         <div className="prose prose-slate dark:prose-invert max-w-none markdown-content font-sans">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm, remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
+                                components={{
+                                    code(props) {
+                                        const { children, className, ...rest } = props;
+                                        const match = /language-(\w+)/.exec(className || '');
+                                        if (match?.[1] === 'mermaid') {
+                                            return <MermaidBlock code={String(children).replace(/\n$/, '')} />;
+                                        }
+                                        return <code {...rest} className={className}>{children}</code>;
+                                    }
+                                }}
+                            >
                                 {content}
                             </ReactMarkdown>
 

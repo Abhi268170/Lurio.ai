@@ -117,6 +117,10 @@ def generate_course_content(course_id: int, preset_titles: list = None, profile_
                     - 2-3 main sections with explanations
                     - Key takeaways or summary
 
+                    Additional formatting rules:
+                    - Use LaTeX for any mathematical expressions: inline with $...$ and block with $$...$$
+                    - When a concept benefits from a diagram (flows, processes, architectures, sequences), include a Mermaid diagram using a ```mermaid code block. Keep diagrams concise (5-8 nodes max).
+
                     Be thorough, engaging, and educational. Aim for ~500-800 words.
                     {profile_injection}
                     """
