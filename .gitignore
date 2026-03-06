@@ -62,3 +62,12 @@ backend/db_backup/
 
 # Podcasts Volume (Shared)
 backend/podcasts/
+
+.claude-flow/
+.claude/
+.mcp.json
+CLAUDE.md
+Journey-UI.png
+current-mindmap-ui.png
+image.png
+register_error.png

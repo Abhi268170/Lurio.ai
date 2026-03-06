@@ -6,6 +6,7 @@ import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { useCourseStore } from '../stores/courseStore';
 import clsx from 'clsx';
 import { QuizView } from './QuizView';
+import { FloatingNotebook } from './FloatingNotebook';
 
 export const ContentArea: React.FC = () => {
     const {
@@ -17,18 +18,14 @@ export const ContentArea: React.FC = () => {
         togglePappyChat,
         toggleChat,
         isChatOpen,
-        moduleNotes,
         moduleAudioStatus,
-        saveNotes,
         generateModuleAudio,
         fetchModuleAudioUrl,
         regenerateModule,
     } = useCourseStore();
 
     const [selection, setSelection] = useState<{ text: string; top: number; left: number } | null>(null);
-    const [isNotesOpen, setIsNotesOpen] = useState(false);
-    const [notesText, setNotesText] = useState('');
-    const [notesSaved, setNotesSaved] = useState(false);
+    const [isNotebookOpen, setIsNotebookOpen] = useState(false);
     const [isRegenerateOpen, setIsRegenerateOpen] = useState(false);
     const [selectedDifficulty, setSelectedDifficulty] = useState('intermediate');
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -36,23 +33,13 @@ export const ContentArea: React.FC = () => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const navigate = useNavigate();
 
-    // Sync notes text when active module changes
+    // Reset panels when active module changes
     useEffect(() => {
         if (activeModuleId !== null) {
-            setNotesText(moduleNotes[activeModuleId] || '');
             setAudioUrl(null);
-            setIsNotesOpen(false);
             setIsRegenerateOpen(false);
-            setNotesSaved(false);
         }
     }, [activeModuleId]);
-
-    const handleSaveNotes = async () => {
-        if (activeModuleId === null) return;
-        await saveNotes(activeModuleId, notesText);
-        setNotesSaved(true);
-        setTimeout(() => setNotesSaved(false), 2000);
-    };
 
     const handleGenerateAudio = async () => {
         if (activeModuleId === null) return;
@@ -180,16 +167,16 @@ export const ContentArea: React.FC = () => {
                         </div>
                         {!isQuiz && activeModule.status === 'completed' && (
                             <div className="flex items-center gap-1">
-                                {/* Notes toggle */}
+                                {/* Notebook toggle */}
                                 <button
-                                    onClick={() => { setIsNotesOpen(v => !v); setIsRegenerateOpen(false); }}
-                                    title="My Notes"
+                                    onClick={() => setIsNotebookOpen(v => !v)}
+                                    title="Open Notebook"
                                     className={clsx("p-2 rounded-lg text-sm transition-colors flex items-center gap-1.5 font-semibold",
-                                        isNotesOpen ? "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400" : "text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                                        isNotebookOpen ? "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400" : "text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20"
                                     )}
                                 >
-                                    <span className="material-icons-round text-base">edit_note</span>
-                                    <span className="text-xs hidden sm:inline">Notes</span>
+                                    <span className="material-icons-round text-base">menu_book</span>
+                                    <span className="text-xs hidden sm:inline">Notebook</span>
                                 </button>
 
                                 {/* Audio button */}
@@ -225,7 +212,7 @@ export const ContentArea: React.FC = () => {
 
                                 {/* Regenerate toggle */}
                                 <button
-                                    onClick={() => { setIsRegenerateOpen(v => !v); setIsNotesOpen(false); }}
+                                    onClick={() => setIsRegenerateOpen(v => !v)}
                                     title="Regenerate at different difficulty"
                                     className={clsx("p-2 rounded-lg text-sm transition-colors flex items-center gap-1.5 font-semibold",
                                         isRegenerateOpen ? "bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400" : "text-slate-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20"
@@ -271,6 +258,7 @@ export const ContentArea: React.FC = () => {
                             </button>
                         </div>
                     )}
+
                 </div>
 
                 <div className="flex-1 p-8 overflow-y-auto" onMouseUp={allModulesCompleted && !isQuiz ? handleTextSelection : undefined}>
@@ -313,34 +301,6 @@ export const ContentArea: React.FC = () => {
                                     <span className="inline-block w-2 h-2 bg-current rounded-full animate-bounce delay-150"></span>
                                 </div>
                             )}
-                        </div>
-                    )}
-
-                    {/* Notes Panel */}
-                    {isNotesOpen && !isQuiz && (
-                        <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/30">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                                    <span className="material-icons-round text-sm">edit_note</span>
-                                    My Notes
-                                </span>
-                                <button
-                                    onClick={handleSaveNotes}
-                                    className={clsx("px-3 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1",
-                                        notesSaved ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400" : "bg-amber-600 text-white hover:bg-amber-700"
-                                    )}
-                                >
-                                    <span className="material-icons-round text-sm">{notesSaved ? 'check' : 'save'}</span>
-                                    {notesSaved ? 'Saved!' : 'Save'}
-                                </button>
-                            </div>
-                            <textarea
-                                value={notesText}
-                                onChange={e => setNotesText(e.target.value)}
-                                placeholder="Write your notes for this module here..."
-                                rows={5}
-                                className="w-full bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-900/50 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"
-                            />
                         </div>
                     )}
 
@@ -442,6 +402,12 @@ export const ContentArea: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            <FloatingNotebook
+                isOpen={isNotebookOpen}
+                onClose={() => setIsNotebookOpen(false)}
+                initialModuleId={activeModuleId}
+            />
 
             <div className="mt-6 flex flex-col md:flex-row gap-4 items-center justify-between px-4">
                 <div className="flex items-center gap-4">
