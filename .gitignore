@@ -1,0 +1,64 @@
+# Legacy and Internal
+legacy_archive/
+docs/
+Oauthcreds.md
+.agent/
+.gemini/
+.playwright-mcp/
+_bmad/
+_bmad-output/
+backend.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+.stylelintcache
+.prettiercache
+.parcel-cache
+.cache
+.vite/
+.next/
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environments
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database
+backend/db_backup/
+*.sqlite3
+
+# Podcasts Volume (Shared)
+backend/podcasts/
