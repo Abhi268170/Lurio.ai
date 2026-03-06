@@ -7,7 +7,7 @@ class ProfessorAgent:
     def __init__(self, provider: str = "ollama", model: str = None, api_key: str = None):
         self.architect = ArchitectAgent(provider=provider, model=model, api_key=api_key)
 
-    async def generate_module_content(self, topic: str, module_title: str, module_description: str, difficulty: str) -> str:
+    async def generate_module_content(self, topic: str, module_title: str, module_description: str, difficulty: str, user_profile_injection: str = "") -> str:
         """
         Generate detailed educational content for a module.
         Beginner: Super simple explanations, many analogies.
@@ -25,25 +25,26 @@ class ProfessorAgent:
         You are an expert Professor specialized in teaching {topic}.
         Your goal is to write a detailed lesson for the module: "{module_title}".
         The student is at a {difficulty} level, so your explanation should be {complexity}
-        
+
         Formatting Rules:
         1. Use clear Markdown.
         2. Include a catchy title.
         3. Use sections with ## headings.
         4. Use bullet points for key takeaways.
         5. Include a "Summary" section at the end.
+        {user_profile_injection}
         """
 
         prompt = f"""
         Write the lesson content for: "{module_title}"
         Context/Objectives: {module_description}
-        
+
         Aim for a comprehensive explanation of about 600-1000 words.
         """
-        
+
         return await self.architect.generate_content(prompt, system=system_prompt)
 
-    async def generate_module_content_stream(self, topic: str, module_title: str, module_description: str, difficulty: str):
+    async def generate_module_content_stream(self, topic: str, module_title: str, module_description: str, difficulty: str, user_profile_injection: str = ""):
         """Streaming version of generate_module_content."""
         complexity_guide = {
             "beginner": "super simple, using very basic language and frequent analogies (like explaining to a child).",
@@ -63,6 +64,7 @@ class ProfessorAgent:
         3. Use sections with ## headings.
         4. Use bullet points for key takeaways.
         5. Include a "Summary" section at the end.
+        {user_profile_injection}
         """
 
         prompt = f"""

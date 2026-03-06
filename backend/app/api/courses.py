@@ -135,9 +135,12 @@ async def create_course(
     await db.commit()
     await db.refresh(course)
 
-    # Lazy import to avoid circular imports at module level
+    # Fetch learning profile for personalized generation
+    from app.services.profile_service import get_profile_prompt_injection
+    profile_injection = await get_profile_prompt_injection(current_user.id, db)
+
     from app.tasks.course_tasks import generate_course_content
-    generate_course_content.delay(course.id, course_in.module_titles)
+    generate_course_content.delay(course.id, course_in.module_titles, profile_injection)
 
     return course
 

@@ -21,3 +21,4 @@ class User(Base):
 
     courses = relationship("Course", back_populates="owner", cascade="all, delete-orphan")
     journeys = relationship("Journey", back_populates="owner", cascade="all, delete-orphan")
+    learning_profile = relationship("UserLearningProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")

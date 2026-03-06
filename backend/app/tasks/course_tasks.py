@@ -15,7 +15,7 @@ STREAM_CHANNEL = "course:{course_id}:stream"
 
 
 @celery_app.task(name="app.tasks.course_tasks.generate_course_content")
-def generate_course_content(course_id: int, preset_titles: list = None):
+def generate_course_content(course_id: int, preset_titles: list = None, profile_injection: str = ""):
     """
     Task to generate the course syllabus and all module content using AI.
     If preset_titles is provided (from syllabus-preview selection), skip syllabus generation.
@@ -118,6 +118,7 @@ def generate_course_content(course_id: int, preset_titles: list = None):
                     - Key takeaways or summary
 
                     Be thorough, engaging, and educational. Aim for ~500-800 words.
+                    {profile_injection}
                     """
 
                     # Stream content chunks and publish each to Redis

@@ -38,6 +38,14 @@ class RegenerateRequest(BaseModel):
     difficulty: str = "intermediate"
 
 
+class AnalyticsOpenRequest(BaseModel):
+    pass  # just a signal
+
+
+class AnalyticsCompleteRequest(BaseModel):
+    time_spent_seconds: int
+
+
 # ---------------------------------------------------------------------------
 # Existing endpoints
 # ---------------------------------------------------------------------------
@@ -127,6 +135,12 @@ async def verify_recall(
 
     agent = ProfessorAgent(provider=course.provider, model=course.model, api_key=api_key)
     evaluation = await agent.verify_recall_answer(payload.question, payload.answer, module.content)
+
+    # Record checkpoint score in analytics
+    from app.services import profile_service
+    score = 1.0 if evaluation.get("is_correct") else 0.3
+    await profile_service.record_checkpoint_result(module_id, current_user.id, score, db)
+
     return evaluation
 
 
@@ -273,6 +287,10 @@ async def regenerate_module(
     module.audio_status = None
     await db.commit()
 
+    # Track regeneration in profile
+    from app.services import profile_service as ps
+    await ps.record_module_regenerated(module_id, current_user.id, db)
+
     from app.agents.professor import ProfessorAgent
     from app.core.security import decrypt_key
 
@@ -282,6 +300,8 @@ async def regenerate_module(
             api_key = decrypt_key(api_key)
         except Exception:
             pass
+
+    profile_injection = await ps.get_profile_prompt_injection(current_user.id, db)
 
     agent = ProfessorAgent(provider=course.provider or "groq", model=course.model, api_key=api_key)
     content_parts: list[str] = []
@@ -293,6 +313,7 @@ async def regenerate_module(
                 module_title=module.title,
                 module_description=module.title,
                 difficulty=payload.difficulty,
+                user_profile_injection=profile_injection,
             ):
                 content_parts.append(chunk)
                 yield f"data: {json.dumps({'chunk': chunk})}\n\n"
@@ -309,3 +330,33 @@ async def regenerate_module(
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream", headers=SSE_HEADERS)
+
+
+@router.post("/{module_id}/analytics/open")
+async def analytics_module_open(
+    course_id: int,
+    module_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """Record that the user opened a module. Fire-and-forget."""
+    from app.services import profile_service
+    await profile_service.record_module_open(module_id, current_user.id, db)
+    return {"status": "ok"}
+
+
+@router.post("/{module_id}/analytics/complete")
+async def analytics_module_complete(
+    course_id: int,
+    module_id: int,
+    payload: AnalyticsCompleteRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> Any:
+    """Record time spent on module when user marks it complete. Fire-and-forget."""
+    from app.services import profile_service
+    await profile_service.record_module_complete(
+        module_id, current_user.id, payload.time_spent_seconds, db
+    )
+    new_count = await profile_service.increment_module_completed(current_user.id, db)
+    return {"status": "ok", "total_modules_completed": new_count}

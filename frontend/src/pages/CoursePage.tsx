@@ -14,12 +14,13 @@ import { PappyChat } from '../components/PappyChat';
 import { PopoCheckpoint } from '../components/PopoCheckpoint';
 import { FlashcardDeck } from '../components/FlashcardDeck';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
+import { LearningFeedbackModal } from '../components/LearningFeedbackModal';
 
 
 export const CoursePage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     useCourseStream(id);
-    const { title, modules, journeyId, courseId, podcastStatus, generatePodcast } = useCourseStore();
+    const { title, modules, journeyId, courseId, podcastStatus, generatePodcast, showFeedbackForm, setShowFeedbackForm } = useCourseStore();
     const { theme, toggleTheme } = useTheme();
     const [showNotification, setShowNotification] = useState(false);
     const [notificationShown, setNotificationShown] = useState(false);
@@ -137,6 +138,9 @@ export const CoursePage: React.FC = () => {
         <div className="h-screen flex flex-col bg-background-light dark:bg-background-dark font-sans text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-hidden">
             <FlashcardDeck />
             <PopoCheckpoint />
+            {showFeedbackForm && (
+                <LearningFeedbackModal onClose={() => setShowFeedbackForm(false)} />
+            )}
             <DeleteConfirmationModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}

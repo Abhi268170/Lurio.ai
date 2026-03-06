@@ -96,6 +96,14 @@ interface CourseStore {
 
     // Mindmap
     fetchMindmap: () => Promise<any | null>;
+
+    // Analytics & Personalization
+    moduleOpenedAt: Record<number, number>; // moduleId -> Date.now()
+    showFeedbackForm: boolean;
+    setShowFeedbackForm: (v: boolean) => void;
+    trackModuleOpen: (moduleId: number) => void;
+    trackModuleComplete: (moduleId: number) => Promise<void>;
+    trackFeatureUsage: (feature: string) => void;
 }
 
 export const useCourseStore = create<CourseStore>((set, get) => ({
@@ -131,6 +139,10 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
     // Notes & Audio
     moduleNotes: {},
     moduleAudioStatus: {},
+
+    // Analytics
+    moduleOpenedAt: {},
+    showFeedbackForm: false,
 
     setCourse: (id: number, title: string, topic: string, provider?: string, journeyId?: number | null, model?: string | null) =>
         set((state) => ({
@@ -179,7 +191,10 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
         }
     })),
 
-    setActiveModule: (id: number) => set({ activeModuleId: id }),
+    setActiveModule: (id: number) => {
+        set({ activeModuleId: id });
+        get().trackModuleOpen(id);
+    },
 
     toggleChat: (isOpen?: boolean) => set((state) => ({
         isChatOpen: isOpen !== undefined ? isOpen : !state.isChatOpen
@@ -379,6 +394,10 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
                         m.id === moduleId ? { ...m, is_completed_by_user: updatedModule.is_completed_by_user } : m
                     )
                 }));
+                // Track completion analytics (only when marking as complete, not uncomplete)
+                if (updatedModule.is_completed_by_user) {
+                    await get().trackModuleComplete(moduleId);
+                }
             }
         } catch (error) {
             console.error("Failed to toggle module completion", error);
@@ -599,6 +618,56 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
             console.error("Failed to regenerate module", e);
             set(state => ({ modules: state.modules.map(m => m.id === moduleId ? { ...m, status: 'failed' } : m) }));
         }
+    },
+
+    setShowFeedbackForm: (v: boolean) => set({ showFeedbackForm: v }),
+
+    trackModuleOpen: (moduleId: number) => {
+        set(state => ({
+            moduleOpenedAt: { ...state.moduleOpenedAt, [moduleId]: Date.now() }
+        }));
+        // Fire-and-forget to backend
+        const courseId = get().courseId;
+        if (!courseId) return;
+        const token = useAuthStore.getState().token;
+        fetch(`http://localhost:8000/api/v1/courses/${courseId}/modules/${moduleId}/analytics/open`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).catch(() => {});
+    },
+
+    trackModuleComplete: async (moduleId: number) => {
+        const courseId = get().courseId;
+        if (!courseId) return;
+        const openedAt = get().moduleOpenedAt[moduleId];
+        const timeSpent = openedAt ? Math.round((Date.now() - openedAt) / 1000) : 0;
+        try {
+            const token = useAuthStore.getState().token;
+            const res = await fetch(
+                `http://localhost:8000/api/v1/courses/${courseId}/modules/${moduleId}/analytics/complete`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                    body: JSON.stringify({ time_spent_seconds: timeSpent }),
+                }
+            );
+            if (res.ok) {
+                const data = await res.json();
+                // Show feedback form on the very first ever module completion
+                if (data.total_modules_completed === 1) {
+                    set({ showFeedbackForm: true });
+                }
+            }
+        } catch { /* non-blocking */ }
+    },
+
+    trackFeatureUsage: (feature: string) => {
+        const token = useAuthStore.getState().token;
+        fetch('http://localhost:8000/api/v1/profile/feature-usage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+            body: JSON.stringify({ feature }),
+        }).catch(() => {});
     },
 
     fetchMindmap: async () => {

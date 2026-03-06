@@ -13,7 +13,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.api import courses, auth, users, modules, journeys, websocket, flashcards, revisions, providers, chat
+from app.api import courses, auth, users, modules, journeys, websocket, flashcards, revisions, providers, chat, profile
 
 app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["auth"])
 app.include_router(users.router, prefix=settings.API_V1_STR + "/users", tags=["users"])
@@ -25,6 +25,7 @@ app.include_router(flashcards.router, prefix=settings.API_V1_STR + "/courses/{co
 app.include_router(revisions.router, prefix=settings.API_V1_STR + "/courses/{course_id}/final-revision", tags=["revisions"])
 app.include_router(chat.router, prefix=settings.API_V1_STR, tags=["chat"])
 app.include_router(providers.router, prefix=settings.API_V1_STR + "/providers", tags=["providers"])
+app.include_router(profile.router, prefix=settings.API_V1_STR + "/profile", tags=["profile"])
 
 @app.get("/")
 async def root():
